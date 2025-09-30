@@ -294,15 +294,35 @@ class SalesFrame(ttk.Frame):
         if not selected:
             return
         
-        prod_data = tree.item(selected, 'tags')[0]
-        nombre, stock, precio, desc = prod_data[1], prod_data[2], float(prod_data[3]), prod_data[4]
-        
-        detail_text = f"Nombre: {nombre}\n\n"
-        detail_text += f"Stock: {stock} unidades\n\n"
-        detail_text += f"Precio: ${precio:.2f}\n\n"
-        detail_text += f"Descripción:\n{desc or 'Sin descripción'}"
-        
-        self.detail_label.config(text=detail_text)
+        try:
+            # Obtener los valores directamente de la vista, que son más confiables
+            values = tree.item(selected, 'values')
+            
+            if not values or len(values) < 4:
+                self.detail_label.config(text="Error: No se pudieron cargar los datos del producto")
+                return
+            
+            # values = (id, nombre, stock, precio_formateado)
+            nombre = values[1]
+            stock = values[2]
+            # Limpiar el formato del precio ($20.00 -> 20.00)
+            precio_str = values[3].replace('$', '').replace(',', '')
+            precio = float(precio_str)
+            
+            # Para la descripción, buscarla en la base de datos
+            prod_id = values[0]
+            result = self.db.fetch("SELECT descripcion FROM Productos WHERE id = ?", (prod_id,))
+            desc = result[0][0] if result and result[0] else "Sin descripción"
+            
+            detail_text = f"Nombre: {nombre}\n\n"
+            detail_text += f"Stock: {stock} unidades\n\n"
+            detail_text += f"Precio: ${precio:.2f}\n\n"
+            detail_text += f"Descripción:\n{desc or 'Sin descripción'}"
+            
+            self.detail_label.config(text=detail_text)
+            
+        except (ValueError, IndexError, TypeError) as e:
+            self.detail_label.config(text=f"Error al cargar datos del producto: {e}")
 
     def add_from_search(self, tree, quantity, window):
         """Añade producto al carrito desde búsqueda."""
@@ -316,32 +336,20 @@ class SalesFrame(ttk.Frame):
             return
         
         try:
-            # Debug: Obtener toda la información del item seleccionado
+            # Obtener los valores directamente de la vista, que son más confiables
             item_values = tree.item(selected, 'values')
-            item_tags = tree.item(selected, 'tags')
             
-            # Verificar que tags no esté vacío
-            if not item_tags:
-                messagebox.showerror("Error", "No se encontraron datos del producto. Intente refrescar la búsqueda.")
+            if not item_values or len(item_values) < 4:
+                messagebox.showerror("Error", "No se encontraron datos del producto")
                 return
             
-            prod_data = item_tags[0]
-            
-            # Debug adicional
-            print(f"DEBUG - item_values: {item_values}")
-            print(f"DEBUG - item_tags: {item_tags}")
-            print(f"DEBUG - prod_data: {prod_data}")
-            print(f"DEBUG - type(prod_data): {type(prod_data)}")
-            
-            # Validación adicional de datos
-            if not isinstance(prod_data, (tuple, list)) or len(prod_data) < 5:
-                messagebox.showerror("Error", f"Datos de producto inválidos.\nDatos recibidos: {repr(prod_data)}\nTipo: {type(prod_data)}\nIntente refrescar la búsqueda.")
-                return
-            
-            prod_id = int(prod_data[0])
-            nombre = str(prod_data[1])
-            stock = int(prod_data[2])
-            precio = float(prod_data[3])
+            # values = (id, nombre, stock, precio_formateado)
+            prod_id = int(item_values[0])
+            nombre = str(item_values[1])
+            stock = int(item_values[2])
+            # Limpiar el formato del precio ($20.00 -> 20.00)
+            precio_str = item_values[3].replace('$', '').replace(',', '')
+            precio = float(precio_str)
             
             current_qty = self.cart.get(prod_id, {}).get('cantidad', 0)
             if (current_qty + quantity) > stock:
@@ -365,13 +373,8 @@ class SalesFrame(ttk.Frame):
             
         except (IndexError, ValueError, TypeError) as e:
             error_msg = f"Error al obtener datos del producto: {e}"
-            if 'prod_data' in locals():
-                error_msg += f"\nDatos recibidos: {repr(prod_data)}"
-                error_msg += f"\nTipo: {type(prod_data)}"
             if 'item_values' in locals():
                 error_msg += f"\nValues: {item_values}"
-            if 'item_tags' in locals():
-                error_msg += f"\nTags: {item_tags}"
             error_msg += "\nIntente seleccionar el producto nuevamente."
             messagebox.showerror("Error", error_msg)
 
