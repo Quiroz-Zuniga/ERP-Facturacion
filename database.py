@@ -2,13 +2,14 @@
 database.py - Gestor de Base de Datos SQLite
 Maneja todas las operaciones CRUD y estructura de la base de datos
 """
+
 import sqlite3
 from tkinter import messagebox
 
 
 class DBManager:
     """Maneja la conexión a SQLite y operaciones CRUD/Setup."""
-    
+
     def __init__(self, db_name="erp_profesional.db"):
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
@@ -16,9 +17,10 @@ class DBManager:
 
     def create_tables(self):
         """Crea todas las tablas necesarias del sistema."""
-        
+
         # Tabla de Productos
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Productos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
@@ -26,23 +28,26 @@ class DBManager:
                 precio REAL NOT NULL,
                 stock INTEGER NOT NULL,
                 proveedor_id INTEGER,
-                imagen_path TEXT,
                 FOREIGN KEY (proveedor_id) REFERENCES Proveedores(id)
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Proveedores
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Proveedores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
                 contacto TEXT,
                 telefono TEXT
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Usuarios
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
@@ -50,28 +55,34 @@ class DBManager:
                 contrasena TEXT NOT NULL,
                 rol TEXT NOT NULL
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Descuentos
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Descuentos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
                 tipo TEXT,
                 porcentaje REAL NOT NULL
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Configuración
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Configuracion (
                 clave TEXT PRIMARY KEY,
                 valor TEXT
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Ventas
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS Ventas (
                 id TEXT PRIMARY KEY,
                 fecha TEXT NOT NULL,
@@ -81,10 +92,12 @@ class DBManager:
                 usuario_id INTEGER,
                 tipo_recibo TEXT
             )
-        """)
-        
+        """
+        )
+
         # Tabla de Detalle de Venta
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS DetalleVenta (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 venta_id TEXT,
@@ -96,54 +109,57 @@ class DBManager:
                 subtotal REAL,
                 FOREIGN KEY (venta_id) REFERENCES Ventas(id)
             )
-        """)
-        
+        """
+        )
+
         self.conn.commit()
         self.insert_initial_data()
 
     def insert_initial_data(self):
         """Inserta datos iniciales si las tablas están vacías."""
-        
+
         # Usuario administrador por defecto
         if not self.fetch("SELECT * FROM Usuarios"):
             self.execute(
                 "INSERT INTO Usuarios (nombre, usuario, contrasena, rol) VALUES (?, ?, ?, ?)",
-                ('Administrador', 'admin', '1234', 'Administrador')
+                ("Administrador", "admin", "1234", "Administrador"),
             )
-        
+
         # Proveedor de ejemplo
         if not self.fetch("SELECT * FROM Proveedores"):
             self.execute(
                 "INSERT INTO Proveedores (nombre, contacto, telefono) VALUES (?, ?, ?)",
-                ('Distribuidora Central', 'Juan Pérez', '555-1234')
+                ("Distribuidora Central", "Juan Pérez", "555-1234"),
             )
-        
+
         # Descuentos predefinidos
         if not self.fetch("SELECT * FROM Descuentos"):
             self.execute(
                 "INSERT INTO Descuentos (nombre, tipo, porcentaje) VALUES (?, ?, ?)",
-                ('Docena 10%', 'Docena', 0.10)
+                ("Docena 10%", "Docena", 0.10),
             )
             self.execute(
                 "INSERT INTO Descuentos (nombre, tipo, porcentaje) VALUES (?, ?, ?)",
-                ('Mayorista 15%', 'Mayorista', 0.15)
+                ("Mayorista 15%", "Mayorista", 0.15),
             )
-        
+
         # Plantilla de recibo por defecto
-        if not self.fetch("SELECT * FROM Configuracion WHERE clave = 'recibo_template'"):
-            self.set_config('recibo_template', self.default_receipt_template())
-        
+        if not self.fetch(
+            "SELECT * FROM Configuracion WHERE clave = 'recibo_template'"
+        ):
+            self.set_config("recibo_template", self.default_receipt_template())
+
         # Productos de ejemplo
         if not self.fetch("SELECT * FROM Productos"):
             productos_ejemplo = [
-                ('Monitor 27"', 'Monitor 4K profesional', 320.00, 15, 1, 'monitor.png'),
-                ('Teclado Mecánico', 'Switches Blue, RGB', 45.00, 105, 1, 'teclado.png'),
-                ('Mouse Gamer', 'RGB, 16000 DPI', 35.00, 50, 1, 'mouse.png'),
-                ('Laptop HP', 'i5, 8GB RAM, 256GB SSD', 650.00, 8, 1, 'laptop.png'),
+                ('Monitor 27"', "Monitor 4K profesional", 320.00, 15, 1),
+                ("Teclado Mecánico", "Switches Blue, RGB", 45.00, 105, 1),
+                ("Mouse Gamer", "RGB, 16000 DPI", 35.00, 50, 1),
+                ("Laptop HP", "i5, 8GB RAM, 256GB SSD", 650.00, 8, 1),
             ]
             self.cursor.executemany(
-                "INSERT INTO Productos (nombre, descripcion, precio, stock, proveedor_id, imagen_path) VALUES (?, ?, ?, ?, ?, ?)",
-                productos_ejemplo
+                "INSERT INTO Productos (nombre, descripcion, precio, stock, proveedor_id) VALUES (?, ?, ?, ?, ?)",
+                productos_ejemplo,
             )
             self.conn.commit()
 
@@ -203,7 +219,7 @@ class DBManager:
         """Establece o actualiza un valor de configuración."""
         self.execute(
             "INSERT OR REPLACE INTO Configuracion (clave, valor) VALUES (?, ?)",
-            (clave, valor)
+            (clave, valor),
         )
 
     def fetch(self, query, params=()):

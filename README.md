@@ -71,10 +71,13 @@ python main.py
 ## Uso del Sistema
 
 ### 1. Login
+
 Al iniciar, ingrese las credenciales por defecto o las que haya configurado.
 
 ### 2. Dashboard
+
 Muestra métricas importantes:
+
 - Total de ventas acumuladas
 - Productos con stock bajo
 - Producto más vendido
@@ -83,10 +86,12 @@ Muestra métricas importantes:
 ### 3. Sistema POS (Ventas)
 
 **Atajos de teclado**:
+
 - `F1`: Abrir búsqueda de productos
 - `F2`: Finalizar venta
 
 **Proceso de venta**:
+
 1. Presione F1 o "Buscar Producto"
 2. Busque y seleccione productos
 3. Ingrese cantidad y añada al carrito
@@ -107,6 +112,7 @@ Muestra métricas importantes:
 ### 5. Gestión de Proveedores
 
 CRUD completo para administrar proveedores:
+
 - Nombre de la empresa
 - Persona de contacto
 - Teléfono
@@ -114,11 +120,13 @@ CRUD completo para administrar proveedores:
 ### 6. Configuración
 
 **Pestaña Descuentos**:
+
 - Crear descuentos por docena, mayorista o por producto
 - Definir porcentajes
 - Aplicar en el sistema POS
 
 **Pestaña Plantilla de Recibo**:
+
 - Editar plantilla HTML del recibo
 - Variables disponibles:
   - `{{NOMBRE_NEGOCIO}}`
@@ -135,19 +143,19 @@ CRUD completo para administrar proveedores:
 ### Productos.csv
 
 ```csv
-id,nombre,descripcion,precio,stock,proveedor_id,imagen_path
-1,Monitor 27",Monitor 4K,320.00,15,1,monitor.png
-2,Teclado RGB,Mecánico switches blue,45.00,100,1,teclado.png
+id,nombre,descripcion,precio,stock,proveedor_id
+1,Monitor 27",Monitor 4K,320.00,15,1
+2,Teclado RGB,Mecánico switches blue,45.00,100,1
 ```
 
 **Campos**:
+
 - `id`: ID del producto (opcional para nuevos)
 - `nombre`: Nombre del producto (obligatorio)
 - `descripcion`: Descripción detallada
 - `precio`: Precio en formato decimal (obligatorio)
 - `stock`: Cantidad disponible (obligatorio)
 - `proveedor_id`: ID del proveedor (obligatorio)
-- `imagen_path`: Ruta de la imagen (opcional)
 
 ## Base de Datos
 
@@ -168,7 +176,7 @@ El sistema crea automáticamente un archivo `erp_profesional.db` con las siguien
 Edite el método `configure_styles()` en `main.py`:
 
 ```python
-self.style.configure('Accent.TButton', 
+self.style.configure('Accent.TButton',
     background='#tu_color',  # Color principal
     foreground='white'
 )
@@ -190,16 +198,20 @@ self.frames = {
 ## Troubleshooting
 
 ### Error: ModuleNotFoundError
+
 - Verifique que todos los archivos estén en las carpetas correctas
 - Asegúrese de ejecutar desde la carpeta `erp_app/`
 
 ### Error: No module named 'tkinter'
+
 En Linux:
+
 ```bash
 sudo apt-get install python3-tk
 ```
 
 ### Base de datos bloqueada
+
 - Cierre todas las instancias de la aplicación
 - Elimine el archivo `erp_profesional.db` para reiniciar
 
