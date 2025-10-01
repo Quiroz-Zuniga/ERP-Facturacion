@@ -18,6 +18,7 @@ class SalesFrame(ttk.Frame):
         self.app = app
         self.db = app.db
         self.cart = {}
+        self.discount_data = {}  # Para almacenar datos de descuentos
 
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=1)
@@ -36,6 +37,64 @@ class SalesFrame(ttk.Frame):
         # Atajos de teclado
         self.app.bind("<F1>", lambda e: self.open_product_search())
         self.app.bind("<F2>", lambda e: self.finalize_sale())
+        self.app.bind("<F3>", lambda e: self.apply_discount_to_all())
+        self.app.bind("<F4>", lambda e: self.remove_all_discounts())
+
+    def load_discounts(self):
+        """Carga los descuentos disponibles desde la base de datos."""
+        try:
+            discounts = self.db.fetch("SELECT id, nombre, porcentaje FROM Descuentos ORDER BY nombre")
+            
+            # Limpiar el combobox
+            self.discount_combo['values'] = ()
+            
+            # Crear lista de opciones
+            discount_options = ["Sin descuento"]
+            self.discount_data = {0: {"id": 0, "nombre": "Sin descuento", "porcentaje": 0.0}}
+            
+            for discount in discounts:
+                discount_id, nombre, porcentaje = discount
+                # Formatear como "Nombre - X%" (asegurar que sea entero si es .0)
+                porcentaje_int = int(porcentaje * 100) if (porcentaje * 100).is_integer() else round(porcentaje * 100, 1)
+                display_text = f"{nombre} - {porcentaje_int}%"
+                discount_options.append(display_text)
+                self.discount_data[len(discount_options) - 1] = {
+                    "id": discount_id,
+                    "nombre": nombre,
+                    "porcentaje": porcentaje
+                }
+            
+            # Actualizar combobox
+            self.discount_combo['values'] = discount_options
+            self.discount_combo.set("Sin descuento")
+            
+        except Exception as e:
+            print(f"Error cargando descuentos: {e}")
+            # Fallback en caso de error
+            self.discount_combo['values'] = ("Sin descuento",)
+            self.discount_combo.set("Sin descuento")
+            self.discount_data = {0: {"id": 0, "nombre": "Sin descuento", "porcentaje": 0.0}}
+
+    def create_tooltips(self):
+        """Crea tooltips de ayuda para los controles."""
+        try:
+            # Tooltip para combobox de descuentos
+            self.create_tooltip(self.discount_combo, 
+                "Seleccione un descuento y luego un producto del carrito para aplicarlo")
+        except:
+            # Si hay error creando tooltips, no es crítico
+            pass
+
+    def create_tooltip(self, widget, text):
+        """Crea un tooltip simple para un widget."""
+        def on_enter(event):
+            widget.configure(cursor="hand2")
+        
+        def on_leave(event):
+            widget.configure(cursor="")
+        
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
 
     def create_cart_ui(self):
         """Crea la interfaz del carrito."""
@@ -81,13 +140,49 @@ class SalesFrame(ttk.Frame):
             action_frame, text="Eliminar Producto", command=self.remove_from_cart
         ).pack(side="left", padx=5)
 
+        # Combobox para descuentos
+        ttk.Label(action_frame, text="Descuento:").pack(side="left", padx=(10, 5))
+        self.discount_var = tk.StringVar()
+        self.discount_combo = ttk.Combobox(
+            action_frame, 
+            textvariable=self.discount_var,
+            state="readonly",
+            width=20
+        )
+        self.discount_combo.pack(side="left", padx=5)
+        self.discount_combo.bind('<<ComboboxSelected>>', self.apply_selected_discount)
+        
+        # Botones para aplicar descuentos
         ttk.Button(
-            action_frame, text="Aplicar Descuento", command=self.apply_discount
-        ).pack(side="left", padx=5)
+            action_frame, 
+            text="Aplicar a Todos (F3)", 
+            command=self.apply_discount_to_all
+        ).pack(side="left", padx=2)
+        
+        ttk.Button(
+            action_frame, 
+            text="Quitar Todos (F4)", 
+            command=self.remove_all_discounts
+        ).pack(side="left", padx=2)
+        
+        # Cargar descuentos al inicializar
+        self.load_discounts()
+        
+        # Agregar tooltips de ayuda
+        self.create_tooltips()
 
         ttk.Button(action_frame, text="Limpiar Carrito", command=self.clear_cart).pack(
             side="right", padx=5
         )
+
+        # Etiqueta de información de descuentos
+        self.discount_info_label = ttk.Label(
+            self.cart_frame, 
+            text="", 
+            font=("Arial", 9),
+            foreground="#666666"
+        )
+        self.discount_info_label.pack(fill="x", pady=(5, 0))
 
     def create_checkout_ui(self):
         """Crea la interfaz de pago."""
@@ -378,6 +473,9 @@ class SalesFrame(ttk.Frame):
             self.cart_tree.delete(item)
 
         total = 0.0
+        total_descuentos = 0.0
+        productos_con_descuento = 0
+        
         for prod_id, data in self.cart.items():
             cant = data["cantidad"]
             precio = data["precio_unitario"]
@@ -386,6 +484,10 @@ class SalesFrame(ttk.Frame):
             desc_monto = (precio * cant) * desc_pct
             subtotal = (precio * cant) - desc_monto
             total += subtotal
+            total_descuentos += desc_monto
+            
+            if desc_pct > 0:
+                productos_con_descuento += 1
 
             self.cart_tree.insert(
                 "",
@@ -402,6 +504,14 @@ class SalesFrame(ttk.Frame):
             )
 
         self.total_var.set(round(total, 2))
+        
+        # Actualizar etiqueta de información de descuentos
+        if productos_con_descuento > 0:
+            info_text = f"💰 {productos_con_descuento} productos con descuento • Ahorro total: ${total_descuentos:.2f}"
+            self.discount_info_label.config(text=info_text, foreground="#28a745")
+        else:
+            self.discount_info_label.config(text="", foreground="#666666")
+        
         self.calculate_change()
 
     def calculate_change(self, event=None):
@@ -451,6 +561,150 @@ class SalesFrame(ttk.Frame):
             self.cart = {}
             self.update_cart_display()
             self.monto_pagado_var.set(0.0)
+            # Resetear combobox de descuentos
+            self.discount_combo.set("Sin descuento")
+
+    def apply_selected_discount(self, event=None):
+        """Aplica el descuento seleccionado del combobox al producto seleccionado."""
+        selected = self.cart_tree.focus()
+        if not selected:
+            messagebox.showwarning("Advertencia", "Seleccione un producto del carrito")
+            return
+        
+        try:
+            # Obtener producto seleccionado
+            prod_id = int(self.cart_tree.item(selected, "values")[0])
+            
+            if prod_id not in self.cart:
+                messagebox.showerror("Error", "Producto no encontrado en el carrito")
+                return
+            
+            # Obtener descuento seleccionado
+            selected_index = self.discount_combo.current()
+            if selected_index == -1:
+                return  # No hay selección
+            
+            discount_info = self.discount_data.get(selected_index)
+            if not discount_info:
+                messagebox.showerror("Error", "Descuento no válido")
+                return
+            
+            # Aplicar descuento
+            descuento_porcentaje = discount_info["porcentaje"]
+            self.cart[prod_id]["descuento_porcentaje"] = descuento_porcentaje
+            
+            # Actualizar display
+            self.update_cart_display()
+            
+            # Mostrar confirmación
+            if descuento_porcentaje > 0:
+                messagebox.showinfo(
+                    "Descuento Aplicado", 
+                    f"Descuento '{discount_info['nombre']}' aplicado: {int(descuento_porcentaje * 100)}%"
+                )
+            else:
+                messagebox.showinfo("Descuento Removido", "Descuento removido del producto")
+                
+        except (ValueError, IndexError) as e:
+            messagebox.showerror("Error", f"Error al aplicar descuento: {e}")
+
+    def apply_discount_to_all(self):
+        """Aplica el descuento seleccionado a todos los productos del carrito."""
+        if not self.cart:
+            messagebox.showwarning("Advertencia", "El carrito está vacío")
+            return
+        
+        # Obtener descuento seleccionado
+        selected_index = self.discount_combo.current()
+        if selected_index == -1:
+            messagebox.showwarning("Advertencia", "Seleccione un descuento primero")
+            return
+        
+        discount_info = self.discount_data.get(selected_index)
+        if not discount_info:
+            messagebox.showerror("Error", "Descuento no válido")
+            return
+        
+        # Confirmar acción
+        discount_name = discount_info["nombre"]
+        discount_pct = int(discount_info["porcentaje"] * 100)
+        
+        if discount_pct > 0:
+            mensaje = f"¿Aplicar '{discount_name}' ({discount_pct}%) a todos los {len(self.cart)} productos del carrito?"
+        else:
+            mensaje = f"¿Remover descuentos de todos los {len(self.cart)} productos del carrito?"
+        
+        if not messagebox.askyesno("Confirmar Descuento Masivo", mensaje):
+            return
+        
+        try:
+            # Aplicar descuento a todos los productos
+            descuento_porcentaje = discount_info["porcentaje"]
+            productos_afectados = 0
+            
+            for prod_id in self.cart:
+                self.cart[prod_id]["descuento_porcentaje"] = descuento_porcentaje
+                productos_afectados += 1
+            
+            # Actualizar display
+            self.update_cart_display()
+            
+            # Mostrar confirmación
+            if descuento_porcentaje > 0:
+                messagebox.showinfo(
+                    "Descuento Aplicado", 
+                    f"Descuento '{discount_name}' ({discount_pct}%) aplicado a {productos_afectados} productos"
+                )
+            else:
+                messagebox.showinfo(
+                    "Descuentos Removidos", 
+                    f"Descuentos removidos de {productos_afectados} productos"
+                )
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al aplicar descuento masivo: {e}")
+
+    def remove_all_discounts(self):
+        """Remueve todos los descuentos del carrito."""
+        if not self.cart:
+            messagebox.showwarning("Advertencia", "El carrito está vacío")
+            return
+        
+        # Contar productos con descuento
+        productos_con_descuento = sum(1 for item in self.cart.values() if item.get("descuento_porcentaje", 0) > 0)
+        
+        if productos_con_descuento == 0:
+            messagebox.showinfo("Información", "No hay productos con descuentos en el carrito")
+            return
+        
+        # Confirmar acción
+        if not messagebox.askyesno(
+            "Confirmar", 
+            f"¿Remover descuentos de {productos_con_descuento} productos?"
+        ):
+            return
+        
+        try:
+            # Remover todos los descuentos
+            productos_afectados = 0
+            for prod_id in self.cart:
+                if self.cart[prod_id].get("descuento_porcentaje", 0) > 0:
+                    self.cart[prod_id]["descuento_porcentaje"] = 0.0
+                    productos_afectados += 1
+            
+            # Actualizar display
+            self.update_cart_display()
+            
+            # Resetear combobox
+            self.discount_combo.set("Sin descuento")
+            
+            messagebox.showinfo(
+                "Descuentos Removidos", 
+                f"Descuentos removidos de {productos_afectados} productos"
+            )
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al remover descuentos: {e}")
 
     def apply_discount(self):
         """Aplica descuento a producto seleccionado."""
@@ -564,6 +818,8 @@ class SalesFrame(ttk.Frame):
             self.cart = {}
             self.update_cart_display()
             self.monto_pagado_var.set(0.0)
+            # Resetear combobox de descuentos después de la venta
+            self.discount_combo.set("Sin descuento")
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al procesar venta: {e}")
