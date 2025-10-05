@@ -326,7 +326,7 @@ def create_pie_chart(self, data, title, label_field, row=0, column=0, columnspan
     canvas_fig.draw()
 
 
-    # -------------------- Refresh --------------------
+    # -------------------- Refresh ,,,--------------------
     def refresh_dashboard(self):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()

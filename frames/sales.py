@@ -1652,5 +1652,5 @@ class SalesFrame(ttk.Frame):
         return html_content
 
     def format_receipt_for_preview(self, venta_id, total, pagado, vuelto, fecha):
-        """Método legacy para compatibilidad."""
+        """Método legacy para compatibilidad,,."""
         return self.format_receipt_ticket(venta_id, total, pagado, vuelto, fecha)
