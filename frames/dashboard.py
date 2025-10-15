@@ -45,17 +45,26 @@ class DashboardFrame(ttk.Frame):
         self.h_scroll.pack(side="bottom", fill="x")
 
 # -------------------- Scroll con rueda del mouse --------------------
+      # -------------------- Scroll con rueda del mouse --------------------
         def _on_mousewheel(event):
-          # Scroll vertical
-            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            try:
+                if self.canvas and self.canvas.winfo_exists():
+                    self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except Exception:
+                # Ignora si el canvas fue destruido o ya no existe
+                pass
 
         def _on_shift_mousewheel(event):
-            # Scroll horizontal si se mantiene Shift
-            self.canvas.xview_scroll(int(-1*(event.delta/120)), "units")
+            try:
+                if self.canvas and self.canvas.winfo_exists():
+                    self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
+            except Exception:
+                pass
 
-# Vincular eventos
-        self.canvas.bind_all("<MouseWheel>", _on_mousewheel)         # Windows / Mac
+        # Vincular eventos
+        self.canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows / Mac
         self.canvas.bind_all("<Shift-MouseWheel>", _on_shift_mousewheel)  # Shift + rueda para horizontal
+
 
         # ------------------ Datos ------------------
         self.load_data()

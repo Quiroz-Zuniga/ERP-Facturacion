@@ -1190,20 +1190,23 @@ class SalesFrame(ttk.Frame):
         return printers if printers else []
 
     def confirm_sale_and_process(self, window, venta_id, total, pagado, vuelto, fecha):
-        """Confirma y procesa la venta definitivamente."""
-        if not messagebox.askyesno("Confirmar Venta", "¿Está seguro de confirmar esta venta?\n\nEsta acción no se puede deshacer."):
+        """Confirma y procesa la venta definitivamente, guarda el recibo y ofrece imprimir.."""
+        if not messagebox.askyesno(
+            "Confirmar Venta",
+            "¿Está seguro de confirmar esta venta?\n\nEsta acción no se puede deshacer."
+        ):
             return
-        
+
         try:
             cart_data = self.pending_sale.get('cart_snapshot', {})
-            
-            # Guardar venta en base de datos
+
+            # 🔹 Guardar venta en base de datos
             self.db.execute(
                 "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (venta_id, fecha, total, pagado, vuelto, self.app.current_user[0], "HTML"),
             )
 
-            # Guardar detalle y actualizar stock
+            # 🔹 Guardar detalle y actualizar stock
             for prod_id, data in cart_data.items():
                 cant = data["cantidad"]
                 precio = data["precio_unitario"]
@@ -1221,34 +1224,41 @@ class SalesFrame(ttk.Frame):
                     (cant, prod_id),
                 )
 
-            # Generar y guardar/imprimir recibo
-            html_content = self.generate_receipt_html(venta_id, total, pagado, vuelto, fecha, cart_data)
-            
-            # Preguntar acción
-            action = messagebox.askquestion("Venta Confirmada", "Venta procesada exitosamente.\n\n¿Desea imprimir el recibo?", icon='info')
-            
-            if action == 'yes':
-                self.print_receipt(html_content, window)
-            else:
-                self.save_receipt(html_content, venta_id, window)
-
-            # Limpiar carrito
+            # 🔹 Limpiar carrito y actualizar interfaz
             self.cart = {}
             self.update_cart_display()
             self.monto_pagado_var.set(0.0)
             self.discount_combo.set("Sin descuento")
-            
+
+            # Cerrar ventana de vista previa
             window.destroy()
-            messagebox.showinfo("Éxito", f"Venta {venta_id} confirmada y procesada correctamente.")
+
+            messagebox.showinfo(
+                "Éxito",
+                f"Venta {venta_id} confirmada y procesada correctamente."
+            )
+
+            # 🔹 Generar contenido HTML del recibo
+            html_content = self.generate_receipt_html(
+                venta_id, total, pagado, vuelto, fecha, cart_data
+            )
+
+            # 🧩 GUARDAR SIEMPRE EL RECIBO ANTES DE TODO
+            self.save_receipt(html_content, venta_id, window)
+
+            # 🔹 Luego preguntar si desea imprimirlo
+            action = messagebox.askquestion(
+                "Venta Confirmada",
+                "Venta procesada exitosamente.\n\n¿Desea imprimir el recibo?",
+                icon='info'
+            )
+
+            if action == 'yes':
+                self.print_receipt(html_content, window)
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al procesar venta: {e}")
 
-    def cancel_sale(self, window):
-        """Cancela la venta sin procesar."""
-        if messagebox.askyesno("Cancelar Venta", "¿Está seguro de cancelar esta venta?\n\nPodrá volver a intentarlo."):
-            window.destroy()
-            messagebox.showinfo("Cancelado", "Venta cancelada. El carrito se mantiene intacto.")
 
     def format_receipt_for_preview(self, venta_id, total, pagado, vuelto, fecha):
         """Formatea el recibo en texto plano para vista previa."""
@@ -1454,36 +1464,65 @@ class SalesFrame(ttk.Frame):
     def save_receipt(self, html_content, venta_id, window):
         """Guarda el recibo en la carpeta configurada."""
         saved_path = self.db.get_config("recibo_save_path", "")
-        
-        if saved_path and os.path.exists(saved_path):
+        # ✅ Verificación y creación automática de carpeta
+
+        if saved_path and not os.path.isdir(saved_path):
+            messagebox.showwarning(
+             "Carpeta no encontrada",
+                f"La carpeta configurada no existe:\n{saved_path}\n\nSe creará una nueva automáticamente."
+         )
+
+        if not saved_path or not os.path.isdir(saved_path):
+            # Carpeta por defecto si no está configurada
+            saved_path = os.path.join(os.path.expanduser("~"), "Recibos")
+            os.makedirs(saved_path, exist_ok=True)
+            # Actualiza la config en la base de datos
+            try:
+                self.db.set_config("recibo_save_path", saved_path)
+            except:
+                pass
+
+
+        file_path = ""
+        if saved_path and os.path.isdir(saved_path):
+            # Asegura que la carpeta existe y es válida
             filename = f"Recibo_{venta_id}.html"
             file_path = os.path.join(saved_path, filename)
         else:
+            # Si no hay carpeta válida, pide al usuario seleccionar dónde guardar
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".html",
                 filetypes=[("HTML", "*.html"), ("Todos los archivos", "*.*")],
                 initialfile=f"Recibo_{venta_id}.html",
                 title="Guardar Recibo"
             )
-        
+
         if file_path:
             try:
+                # Crea la carpeta si no existe
+                folder = os.path.dirname(file_path)
+                if not os.path.exists(folder):
+                    os.makedirs(folder, exist_ok=True)
+
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(html_content)
-                
+
                 messagebox.showinfo(
                     "Recibo Guardado",
                     f"Recibo guardado exitosamente en:\n{file_path}"
                 )
-                
+
                 if messagebox.askyesno("Abrir Recibo", "¿Desea abrir el recibo guardado?"):
                     import webbrowser
                     webbrowser.open(f'file://{file_path}')
-                
+
                 window.destroy()
-                
+
             except Exception as e:
                 messagebox.showerror("Error al Guardar", f"No se pudo guardar el recibo: {e}")
+        else:
+            # Si el usuario cancela el diálogo de guardado, no hace nada
+            pass
 
     def generate_receipt_html(self, venta_id, total, pagado, vuelto, fecha, cart_data=None):
         """Genera el contenido HTML del recibo con diseño similar a ticket y carta."""
