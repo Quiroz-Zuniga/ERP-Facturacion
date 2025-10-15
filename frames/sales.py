@@ -403,10 +403,10 @@ class SalesFrame(ttk.Frame):
                     "cantidad": quantity,
                     "descuento_porcentaje": 0.0,
                 }
-
+            window.destroy()
             self.update_cart_display()
             messagebox.showinfo("Éxito", f"{nombre} añadido al carrito")
-            window.destroy()
+
 
         except (IndexError, ValueError, TypeError) as e:
             error_msg = f"Error al obtener datos del producto: {e}"
