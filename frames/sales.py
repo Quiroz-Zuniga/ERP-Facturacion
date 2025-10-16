@@ -985,29 +985,34 @@ class SalesFrame(ttk.Frame):
         """Método auxiliar para obtener información del cliente para previsualización."""
         cliente_info = None
         cliente_id = None
-        
+
         # Intentar obtener cliente_id desde pending_sale
-        if hasattr(self, 'pending_sale') and self.pending_sale:
+        if hasattr(self, "pending_sale") and self.pending_sale:
             cliente_id = self.pending_sale.get("cliente_id")
-        
+
         # Si no hay cliente_id en pending_sale, intentar obtenerlo de la venta en la BD
         if not cliente_id and venta_id:
-            venta_data = self.db.fetch("SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,))
+            venta_data = self.db.fetch(
+                "SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,)
+            )
             if venta_data and venta_data[0][0]:
                 cliente_id = venta_data[0][0]
-        
+
         # Obtener datos del cliente si existe
         if cliente_id:
-            cliente_data = self.db.fetch("SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?", (cliente_id,))
+            cliente_data = self.db.fetch(
+                "SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?",
+                (cliente_id,),
+            )
             if cliente_data:
                 cliente_info = {
                     "nombre": cliente_data[0][0],
-                    "apellido": cliente_data[0][1], 
+                    "apellido": cliente_data[0][1],
                     "dni": cliente_data[0][2],
                     "telefono": cliente_data[0][3],
-                    "direccion": cliente_data[0][4]
+                    "direccion": cliente_data[0][4],
                 }
-        
+
         return cliente_info
 
     def format_receipt_ticket(self, venta_id, total, pagado, vuelto, fecha):
@@ -1042,13 +1047,13 @@ class SalesFrame(ttk.Frame):
             lines.append("DATOS DEL CLIENTE:".center(width))
             lines.append("-" * width)
             lines.append(f"Nombre: {cliente_info['nombre']} {cliente_info['apellido']}")
-            if cliente_info['dni']:
+            if cliente_info["dni"]:
                 lines.append(f"DNI: {cliente_info['dni']}")
-            if cliente_info['telefono']:
+            if cliente_info["telefono"]:
                 lines.append(f"Tel: {cliente_info['telefono']}")
-            if cliente_info['direccion']:
+            if cliente_info["direccion"]:
                 # Dividir dirección larga en múltiples líneas
-                direccion = cliente_info['direccion']
+                direccion = cliente_info["direccion"]
                 if len(direccion) > width:
                     for i in range(0, len(direccion), width):
                         lines.append(f"Dir: {direccion[i:i+width]}")
@@ -1162,11 +1167,11 @@ class SalesFrame(ttk.Frame):
             lines.append("DATOS DEL CLIENTE:".center(width))
             lines.append("-" * width)
             lines.append(f"Nombre: {cliente_info['nombre']} {cliente_info['apellido']}")
-            if cliente_info['dni']:
+            if cliente_info["dni"]:
                 lines.append(f"DNI: {cliente_info['dni']}")
-            if cliente_info['telefono']:
+            if cliente_info["telefono"]:
                 lines.append(f"Teléfono: {cliente_info['telefono']}")
-            if cliente_info['direccion']:
+            if cliente_info["direccion"]:
                 lines.append(f"Dirección: {cliente_info['direccion']}")
             lines.append("=" * width)
             lines.append("")
@@ -1781,23 +1786,32 @@ class SalesFrame(ttk.Frame):
 
         # Obtener información del cliente
         cliente_info = None
-        cliente_id = self.pending_sale.get("cliente_id") if hasattr(self, 'pending_sale') and self.pending_sale else None
-        
+        cliente_id = (
+            self.pending_sale.get("cliente_id")
+            if hasattr(self, "pending_sale") and self.pending_sale
+            else None
+        )
+
         # Si no hay cliente_id en pending_sale, intentar obtenerlo de la venta en la BD
         if not cliente_id and venta_id:
-            venta_data = self.db.fetch("SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,))
+            venta_data = self.db.fetch(
+                "SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,)
+            )
             if venta_data and venta_data[0][0]:
                 cliente_id = venta_data[0][0]
-        
+
         if cliente_id:
-            cliente_data = self.db.fetch("SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?", (cliente_id,))
+            cliente_data = self.db.fetch(
+                "SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?",
+                (cliente_id,),
+            )
             if cliente_data:
                 cliente_info = {
                     "nombre": cliente_data[0][0],
-                    "apellido": cliente_data[0][1], 
+                    "apellido": cliente_data[0][1],
                     "dni": cliente_data[0][2],
                     "telefono": cliente_data[0][3],
-                    "direccion": cliente_data[0][4]
+                    "direccion": cliente_data[0][4],
                 }
 
         # Determinar formato (ticket/carta) según configuración o variable
@@ -1920,19 +1934,21 @@ class SalesFrame(ttk.Frame):
             <div style="margin: 15px 0; padding: 8px; border: 1px solid #ddd; background: #f9f9f9;">
                 <div style="font-weight: bold; margin-bottom: 5px;">DATOS DEL CLIENTE:</div>
                 <div><strong>Nombre:</strong> {cliente_info['nombre']} {cliente_info['apellido']}</div>"""
-            
-            if cliente_info['dni']:
-                cliente_section += f"""<div><strong>DNI:</strong> {cliente_info['dni']}</div>"""
-            
-            if cliente_info['telefono']:
+
+            if cliente_info["dni"]:
+                cliente_section += (
+                    f"""<div><strong>DNI:</strong> {cliente_info['dni']}</div>"""
+                )
+
+            if cliente_info["telefono"]:
                 cliente_section += f"""<div><strong>Teléfono:</strong> {cliente_info['telefono']}</div>"""
-            
-            if cliente_info['direccion']:
+
+            if cliente_info["direccion"]:
                 cliente_section += f"""<div><strong>Dirección:</strong> {cliente_info['direccion']}</div>"""
-            
+
             cliente_section += """
             </div>"""
-            
+
             html_content += cliente_section
 
         html_content += f"""
