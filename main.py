@@ -23,7 +23,7 @@ class ERPApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Sistema ERP Profesional - CAMBIO DE PRUEBA 2 ✅")
+        self.title("Sistema ERP Profesional")
         self.geometry("1400x900")
         self.configure(bg="#f0f0f0")
 

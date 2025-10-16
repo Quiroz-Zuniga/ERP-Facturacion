@@ -107,9 +107,9 @@ class DBManager:
                 monto_pagado REAL,
                 vuelto REAL,
                 usuario_id INTEGER,
-                cliente_id INTEGER,
+                id_cliente INTEGER,
                 tipo_recibo TEXT,
-                FOREIGN KEY (cliente_id) REFERENCES Clientes(id)
+                FOREIGN KEY (id_cliente) REFERENCES Clientes(id)
             )
         """
         )

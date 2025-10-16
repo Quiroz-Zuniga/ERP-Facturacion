@@ -26,7 +26,7 @@ class ClientsFrame(ttk.Frame):
 
         # Título principal
         title_label = ttk.Label(
-            self, text="GESTIÓN DE CLIENTES", font=("Arial", 16, "bold")
+            self, text="GESTIÓN DE CLIENTES ✅ FUNCIONAL", font=("Arial", 16, "bold")
         )
         title_label.pack(pady=(0, 20))
 
@@ -492,7 +492,7 @@ class ClientsFrame(ttk.Frame):
 
         # Verificar si el cliente tiene ventas asociadas
         ventas = self.db.fetch(
-            "SELECT COUNT(*) FROM Ventas WHERE cliente_id = ?",
+            "SELECT COUNT(*) FROM Ventas WHERE id_cliente = ?",
             (self.cliente_id_seleccionado,),
         )
         tiene_ventas = ventas[0][0] > 0 if ventas else False
@@ -517,11 +517,11 @@ class ClientsFrame(ttk.Frame):
                     "⚠️ ADVERTENCIA: Se eliminarán también todas las ventas asociadas.\n¿Continuar?",
                 ):
                     self.db.execute(
-                        "DELETE FROM DetalleVenta WHERE venta_id IN (SELECT id FROM Ventas WHERE cliente_id = ?)",
+                        "DELETE FROM DetalleVenta WHERE venta_id IN (SELECT id FROM Ventas WHERE id_cliente = ?)",
                         (self.cliente_id_seleccionado,),
                     )
                     self.db.execute(
-                        "DELETE FROM Ventas WHERE cliente_id = ?",
+                        "DELETE FROM Ventas WHERE id_cliente = ?",
                         (self.cliente_id_seleccionado,),
                     )
                     self.db.execute(
@@ -668,7 +668,7 @@ class ClientsFrame(ttk.Frame):
 
             # Clientes con ventas
             clientes_con_ventas = self.db.fetch(
-                "SELECT COUNT(DISTINCT cliente_id) FROM Ventas WHERE cliente_id IS NOT NULL"
+                "SELECT COUNT(DISTINCT id_cliente) FROM Ventas WHERE id_cliente IS NOT NULL"
             )[0][0]
 
             # Clientes registrados este mes

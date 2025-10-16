@@ -1362,7 +1362,7 @@ class SalesFrame(ttk.Frame):
 
             # 🔹 Guardar venta en base de datos
             self.db.execute(
-                "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, cliente_id, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, id_cliente, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     venta_id,
                     fecha,
