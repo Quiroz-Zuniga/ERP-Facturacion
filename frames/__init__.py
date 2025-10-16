@@ -2,6 +2,7 @@
 frames/__init__.py
 Hace que frames sea un paquete importable
 """
+
 from .dashboard import DashboardFrame
 from .products import ProductFrame
 from .suppliers import SupplierFrame
@@ -10,10 +11,10 @@ from .sales import SalesFrame
 from .clients import ClientsFrame
 
 __all__ = [
-    'DashboardFrame',
-    'ProductFrame',
-    'SupplierFrame',
-    'ConfigFrame',
-    'SalesFrame',
-    'ClientsFrame'
+    "DashboardFrame",
+    "ProductFrame",
+    "SupplierFrame",
+    "ConfigFrame",
+    "SalesFrame",
+    "ClientsFrame",
 ]

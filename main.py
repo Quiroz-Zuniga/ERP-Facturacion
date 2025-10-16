@@ -7,7 +7,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from database import DBManager
 from file_manager import FileManager
-from frames import DashboardFrame, ProductFrame, SupplierFrame, ConfigFrame, SalesFrame, ClientsFrame
+from frames import (
+    DashboardFrame,
+    ProductFrame,
+    SupplierFrame,
+    ConfigFrame,
+    SalesFrame,
+    ClientsFrame,
+)
 
 
 class ERPApp(tk.Tk):

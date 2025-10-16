@@ -159,29 +159,26 @@ class SalesFrame(ttk.Frame):
         # Selector de cliente
         client_frame = ttk.LabelFrame(self.checkout_frame, text="Cliente", padding=10)
         client_frame.pack(fill="x", pady=(0, 20))
-        
+
         self.selected_client_id = None
         self.client_var = tk.StringVar(value="Cliente General")
-        
+
         client_select_frame = ttk.Frame(client_frame)
         client_select_frame.pack(fill="x")
-        
+
         self.client_combo = ttk.Combobox(
-            client_select_frame, 
-            textvariable=self.client_var, 
+            client_select_frame,
+            textvariable=self.client_var,
             state="readonly",
-            width=25
+            width=25,
         )
         self.client_combo.pack(side="left", expand=True, fill="x", padx=(0, 5))
         self.client_combo.bind("<<ComboboxSelected>>", self.on_client_select)
-        
+
         ttk.Button(
-            client_select_frame, 
-            text="🔄", 
-            command=self.load_clients,
-            width=3
+            client_select_frame, text="🔄", command=self.load_clients, width=3
         ).pack(side="right")
-        
+
         # Cargar clientes al inicio
         self.load_clients()
 
@@ -436,7 +433,6 @@ class SalesFrame(ttk.Frame):
             self.update_cart_display()
             messagebox.showinfo("Éxito", f"{nombre} añadido al carrito")
 
-
         except (IndexError, ValueError, TypeError) as e:
             error_msg = f"Error al obtener datos del producto: {e}"
             if "item_values" in locals():
@@ -515,24 +511,24 @@ class SalesFrame(ttk.Frame):
         try:
             # Opción para venta sin cliente específico
             clients = [("Cliente General", None)]
-            
+
             # Cargar clientes activos de la base de datos
             client_data = self.db.fetch(
                 "SELECT id, nombre, apellido FROM Clientes WHERE activo = 1 ORDER BY apellido, nombre"
             )
-            
+
             for client in client_data:
                 client_id, nombre, apellido = client
                 display_name = f"{apellido}, {nombre}"
                 clients.append((display_name, client_id))
-            
+
             # Actualizar combobox
             client_names = [client[0] for client in clients]
             self.client_combo["values"] = client_names
-            
+
             # Guardar referencia para obtener IDs
             self.client_data = {client[0]: client[1] for client in clients}
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Error al cargar clientes: {e}")
 
@@ -717,18 +713,20 @@ class SalesFrame(ttk.Frame):
             return
 
         vuelto = self.vuelto_var.get()
-        venta_id = f"V-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100, 999)}"
+        venta_id = (
+            f"V-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100, 999)}"
+        )
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Guardar datos temporales para confirmar después
         self.pending_sale = {
-            'venta_id': venta_id,
-            'fecha': fecha,
-            'total': total,
-            'pagado': pagado,
-            'vuelto': vuelto,
-            'cliente_id': self.selected_client_id,
-            'cart_snapshot': dict(self.cart)  # Copia del carrito
+            "venta_id": venta_id,
+            "fecha": fecha,
+            "total": total,
+            "pagado": pagado,
+            "vuelto": vuelto,
+            "cliente_id": self.selected_client_id,
+            "cart_snapshot": dict(self.cart),  # Copia del carrito
         }
 
         # Mostrar ventana de vista previa (sin procesar la venta)
@@ -740,75 +738,89 @@ class SalesFrame(ttk.Frame):
         preview_win.title("Vista Previa - Recibo de Venta")
         preview_win.geometry("1000x750")
         preview_win.resizable(True, True)
-        
+
         # Variables de estado
         self.current_view_mode = tk.StringVar(value="ticket")
-        
+
         # Frame principal
         main_frame = ttk.Frame(preview_win, padding="20")
         main_frame.pack(fill="both", expand=True)
-        
+
         # Título y alerta
         title_frame = ttk.Frame(main_frame)
         title_frame.pack(fill="x", pady=(0, 15))
-        
+
         ttk.Label(
             title_frame,
             text="⚠ VISTA PREVIA - Venta NO Confirmada",
             font=("Arial", 16, "bold"),
-            foreground="#ff6e40"
+            foreground="#ff6e40",
         ).pack(side="left")
-        
+
         ttk.Label(
-            title_frame,
-            text=f"ID: {venta_id}",
-            font=("Arial", 10),
-            foreground="#666"
+            title_frame, text=f"ID: {venta_id}", font=("Arial", 10), foreground="#666"
         ).pack(side="right")
-        
+
         ttk.Separator(main_frame, orient="horizontal").pack(fill="x", pady=10)
-        
+
         # Frame de contenido: vista previa (izq) y opciones (der)
         content_frame = ttk.Frame(main_frame)
         content_frame.pack(fill="both", expand=True)
-        
+
         content_frame.grid_columnconfigure(0, weight=3)
         content_frame.grid_columnconfigure(1, weight=1)
         content_frame.grid_rowconfigure(0, weight=1)
-        
+
         # PANEL IZQUIERDO: Vista previa
         left_panel = ttk.Frame(content_frame)
         left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        
+
         # Selector de modo de vista
-        view_selector_frame = ttk.LabelFrame(left_panel, text="Modo de Vista", padding=10)
+        view_selector_frame = ttk.LabelFrame(
+            left_panel, text="Modo de Vista", padding=10
+        )
         view_selector_frame.pack(fill="x", pady=(0, 10))
-        
+
         ttk.Radiobutton(
             view_selector_frame,
             text="Vista Previa Normal (Ticket 80mm)",
             variable=self.current_view_mode,
             value="ticket",
-            command=lambda: self.update_preview_display(preview_text, venta_id, total, pagado, vuelto, fecha)
+            command=lambda: self.update_preview_display(
+                preview_text, venta_id, total, pagado, vuelto, fecha
+            ),
         ).pack(side="left", padx=10)
-        
+
         ttk.Radiobutton(
             view_selector_frame,
             text="Vista Previa Carta (Letter)",
             variable=self.current_view_mode,
             value="letter",
-            command=lambda: self.update_preview_display(preview_text, venta_id, total, pagado, vuelto, fecha)
+            command=lambda: self.update_preview_display(
+                preview_text, venta_id, total, pagado, vuelto, fecha
+            ),
         ).pack(side="left", padx=10)
-        
+
         # Área de vista previa
-        preview_frame = ttk.LabelFrame(left_panel, text="Vista Previa del Recibo", padding=10)
+        preview_frame = ttk.LabelFrame(
+            left_panel, text="Vista Previa del Recibo", padding=10
+        )
         preview_frame.pack(fill="both", expand=True)
-        
+
         # Crear canvas con scrollbar
-        canvas = tk.Canvas(preview_frame, bg="#ffffff", highlightthickness=1, highlightbackground="#cccccc")
-        scrollbar_y = ttk.Scrollbar(preview_frame, orient="vertical", command=canvas.yview)
-        scrollbar_x = ttk.Scrollbar(preview_frame, orient="horizontal", command=canvas.xview)
-        
+        canvas = tk.Canvas(
+            preview_frame,
+            bg="#ffffff",
+            highlightthickness=1,
+            highlightbackground="#cccccc",
+        )
+        scrollbar_y = ttk.Scrollbar(
+            preview_frame, orient="vertical", command=canvas.yview
+        )
+        scrollbar_x = ttk.Scrollbar(
+            preview_frame, orient="horizontal", command=canvas.xview
+        )
+
         preview_text = tk.Text(
             canvas,
             font=("Courier New", 9),
@@ -816,115 +828,129 @@ class SalesFrame(ttk.Frame):
             bg="#ffffff",
             relief="flat",
             padx=20,
-            pady=20
+            pady=20,
         )
-        
+
         scrollbar_y.pack(side="right", fill="y")
         scrollbar_x.pack(side="bottom", fill="x")
         canvas.pack(side="left", fill="both", expand=True)
-        
+
         canvas.create_window((0, 0), window=preview_text, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
-        
-        preview_text.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
+
+        preview_text.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
         # Cargar vista inicial
-        self.update_preview_display(preview_text, venta_id, total, pagado, vuelto, fecha)
-        
+        self.update_preview_display(
+            preview_text, venta_id, total, pagado, vuelto, fecha
+        )
+
         # PANEL DERECHO: Opciones y acciones
         right_panel = ttk.Frame(content_frame)
         right_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
-        
+
         # Sección de impresora
-        printer_frame = ttk.LabelFrame(right_panel, text="Configuración de Impresora", padding=15)
+        printer_frame = ttk.LabelFrame(
+            right_panel, text="Configuración de Impresora", padding=15
+        )
         printer_frame.pack(fill="x", pady=(0, 10))
-        
+
         # Detectar impresora
         printer_detected, printer_name = self.detect_printer()
-        
+
         self.printer_status_label = ttk.Label(
             printer_frame,
             text="Buscando impresoras...",
             font=("Arial", 10),
-            foreground="#666"
+            foreground="#666",
         )
         self.printer_status_label.pack(anchor="w", pady=(0, 10))
-        
+
         self.update_printer_status(printer_detected, printer_name)
-        
+
         ttk.Button(
             printer_frame,
             text="🔍 Buscar Impresoras",
-            command=lambda: self.search_printers_dialog(preview_win)
+            command=lambda: self.search_printers_dialog(preview_win),
         ).pack(fill="x", pady=5)
-        
+
         # Opciones de tamaño de impresión
-        ttk.Label(printer_frame, text="Tamaño de Impresión:", font=("Arial", 9, "bold")).pack(anchor="w", pady=(10, 5))
-        
+        ttk.Label(
+            printer_frame, text="Tamaño de Impresión:", font=("Arial", 9, "bold")
+        ).pack(anchor="w", pady=(10, 5))
+
         self.paper_size_var = tk.StringVar(value="ticket")
         ttk.Radiobutton(
             printer_frame,
             text="Ticket (80mm)",
             variable=self.paper_size_var,
-            value="ticket"
+            value="ticket",
         ).pack(anchor="w", padx=10)
-        
+
         ttk.Radiobutton(
             printer_frame,
             text="Carta (Letter)",
             variable=self.paper_size_var,
-            value="letter"
+            value="letter",
         ).pack(anchor="w", padx=10)
-        
+
         # Sección de guardado
-        save_frame = ttk.LabelFrame(right_panel, text="Configuración de Guardado", padding=15)
+        save_frame = ttk.LabelFrame(
+            right_panel, text="Configuración de Guardado", padding=15
+        )
         save_frame.pack(fill="x", pady=(0, 10))
-        
+
         saved_path = self.db.get_config("recibo_save_path", "")
-        
-        ttk.Label(save_frame, text="Carpeta:", font=("Arial", 9, "bold")).pack(anchor="w", pady=(0, 3))
-        
+
+        ttk.Label(save_frame, text="Carpeta:", font=("Arial", 9, "bold")).pack(
+            anchor="w", pady=(0, 3)
+        )
+
         self.path_label = ttk.Label(
             save_frame,
             text=saved_path if saved_path else "No configurada",
             font=("Arial", 8),
             foreground="#666",
-            wraplength=180
+            wraplength=180,
         )
         self.path_label.pack(anchor="w", pady=(0, 10))
-        
+
         ttk.Button(
             save_frame,
             text="📁 Cambiar Carpeta",
-            command=lambda: self.change_save_folder(preview_win)
+            command=lambda: self.change_save_folder(preview_win),
         ).pack(fill="x")
-        
+
         # Botones de acción
         action_frame = ttk.LabelFrame(right_panel, text="Acciones", padding=15)
         action_frame.pack(fill="both", expand=True, pady=(0, 0))
-        
+
         ttk.Label(
             action_frame,
             text="La venta NO se ha procesado aún",
             font=("Arial", 9, "bold"),
-            foreground="#dc3545"
+            foreground="#dc3545",
         ).pack(pady=(0, 15))
-        
+
         ttk.Button(
             action_frame,
             text="✓ CONFIRMAR VENTA",
-            command=lambda: self.confirm_sale_and_process(preview_win, venta_id, total, pagado, vuelto, fecha),
-            style="Accent.TButton"
+            command=lambda: self.confirm_sale_and_process(
+                preview_win, venta_id, total, pagado, vuelto, fecha
+            ),
+            style="Accent.TButton",
         ).pack(fill="x", pady=5)
-        
+
         ttk.Separator(action_frame, orient="horizontal").pack(fill="x", pady=10)
-        
+
         ttk.Button(
             action_frame,
             text="❌ Cancelar Venta",
-            command=lambda: self.cancel_sale(preview_win)
+            command=lambda: self.cancel_sale(preview_win),
         ).pack(fill="x", pady=5)
-        
+
         # Info
         info_label = ttk.Label(
             action_frame,
@@ -932,24 +958,26 @@ class SalesFrame(ttk.Frame):
             font=("Arial", 8),
             foreground="#666",
             wraplength=180,
-            justify="left"
+            justify="left",
         )
         info_label.pack(pady=(15, 0))
 
-    def update_preview_display(self, text_widget, venta_id, total, pagado, vuelto, fecha):
+    def update_preview_display(
+        self, text_widget, venta_id, total, pagado, vuelto, fecha
+    ):
         """Actualiza la vista previa según el modo seleccionado."""
         text_widget.config(state="normal")
         text_widget.delete("1.0", tk.END)
-        
+
         mode = self.current_view_mode.get()
-        
+
         if mode == "ticket":
             content = self.format_receipt_ticket(venta_id, total, pagado, vuelto, fecha)
             text_widget.config(width=50)
         else:  # letter
             content = self.format_receipt_letter(venta_id, total, pagado, vuelto, fecha)
             text_widget.config(width=85)
-        
+
         text_widget.insert("1.0", content)
         text_widget.config(state="disabled")
 
@@ -963,7 +991,11 @@ class SalesFrame(ttk.Frame):
         lines.append("R.T.N.: 12011972000081".center(width))
         lines.append("PODEGA Y COMERCIAL RIVERA".center(width))
         lines.append("TEL.: 2774-1192 / 9967-7300".center(width))
-        lines.append("DIRECCIÓN: Bo. La Mercedes, Colonia la Ermita, 1ra Calle, 14-62, frente a Farmacia Santa, La Paz, Honduras".center(width))
+        lines.append(
+            "DIRECCIÓN: Bo. La Mercedes, Colonia la Ermita, 1ra Calle, 14-62, frente a Farmacia Santa, La Paz, Honduras".center(
+                width
+            )
+        )
         lines.append("EMAIL: freddyrivera2015@gmail.com".center(width))
         lines.append("=" * width)
         lines.append("")
@@ -974,11 +1006,13 @@ class SalesFrame(ttk.Frame):
         lines.append("")
 
         # Encabezados de tabla
-        lines.append(f"{'Cant.':<5}{'Código':<10}{'Producto':<12}{'P':<1}{'Unidad':>4}{'Total':>7}")
+        lines.append(
+            f"{'Cant.':<5}{'Código':<10}{'Producto':<12}{'P':<1}{'Unidad':>4}{'Total':>7}"
+        )
         lines.append("-" * width)
 
         # Items de la venta
-        cart_data = self.pending_sale.get('cart_snapshot', self.cart)
+        cart_data = self.pending_sale.get("cart_snapshot", self.cart)
         subtotal_gravado = 0.0
 
         for prod_id, data in cart_data.items():
@@ -989,9 +1023,11 @@ class SalesFrame(ttk.Frame):
             subtotal_gravado += subtotal
 
             codigo = str(prod_id).zfill(8)  # Código reducido para ticket
-            nombre = data["nombre"][:10]    # Limitar nombre a 10 caracteres
+            nombre = data["nombre"][:10]  # Limitar nombre a 10 caracteres
 
-            lines.append(f"{cant:<5}{codigo:<10}{nombre:<12}{'G':<1}L{precio:>4.2f}L{subtotal:>6.2f}")
+            lines.append(
+                f"{cant:<5}{codigo:<10}{nombre:<12}{'G':<1}L{precio:>4.2f}L{subtotal:>6.2f}"
+            )
 
         # Totales
         lines.append("-" * width)
@@ -1002,7 +1038,9 @@ class SalesFrame(ttk.Frame):
         # Monto en letras
         total_entero = int(total)
         total_centavos = int(round((total - total_entero) * 100))
-        lines.append(f"SON: {self.number_to_words(total_entero).upper()} LEMPIRAS CON {total_centavos:02d}/100")
+        lines.append(
+            f"SON: {self.number_to_words(total_entero).upper()} LEMPIRAS CON {total_centavos:02d}/100"
+        )
         lines.append("")
 
         # Información adicional
@@ -1050,7 +1088,11 @@ class SalesFrame(ttk.Frame):
         lines.append("R.T.N.: 12011972000081".center(width))
         lines.append("PODEGA Y COMERCIAL RIVERA".center(width))
         lines.append("TEL.: 2774-1192 / 9967-7300".center(width))
-        lines.append("DIRECCIÓN: Bo. La Mercedes, Colonia la Ermita, 1ra Calle, 14-62, frente a Farmacia Santa, La Paz, Honduras".center(width))
+        lines.append(
+            "DIRECCIÓN: Bo. La Mercedes, Colonia la Ermita, 1ra Calle, 14-62, frente a Farmacia Santa, La Paz, Honduras".center(
+                width
+            )
+        )
         lines.append("EMAIL: freddyrivera2015@gmail.com".center(width))
         lines.append("=" * width)
         lines.append("")
@@ -1061,11 +1103,13 @@ class SalesFrame(ttk.Frame):
         lines.append("")
 
         # Encabezados de tabla
-        lines.append(f"{'Cant.':<8}{'Código':<18}{'Producto':<30}{'P':<3}{'Unidad':>10}{'Total':>11}")
+        lines.append(
+            f"{'Cant.':<8}{'Código':<18}{'Producto':<30}{'P':<3}{'Unidad':>10}{'Total':>11}"
+        )
         lines.append("-" * width)
 
         # Items de la venta
-        cart_data = self.pending_sale.get('cart_snapshot', self.cart)
+        cart_data = self.pending_sale.get("cart_snapshot", self.cart)
         subtotal_gravado = 0.0
 
         for prod_id, data in cart_data.items():
@@ -1076,9 +1120,11 @@ class SalesFrame(ttk.Frame):
             subtotal_gravado += subtotal
 
             codigo = str(prod_id).zfill(13)  # Código de 13 dígitos
-            nombre = data["nombre"][:28]     # Limitar nombre a 28 caracteres
+            nombre = data["nombre"][:28]  # Limitar nombre a 28 caracteres
 
-            lines.append(f"{cant:<8}{codigo:<18}{nombre:<30}{'G':<3}L{precio:>9.2f}L{subtotal:>9.2f}")
+            lines.append(
+                f"{cant:<8}{codigo:<18}{nombre:<30}{'G':<3}L{precio:>9.2f}L{subtotal:>9.2f}"
+            )
 
         # Totales
         lines.append("-" * width)
@@ -1089,7 +1135,9 @@ class SalesFrame(ttk.Frame):
         # Monto en letras
         total_entero = int(total)
         total_centavos = int(round((total - total_entero) * 100))
-        lines.append(f"SON: {self.number_to_words(total_entero).upper()} LEMPIRAS CON {total_centavos:02d}/100")
+        lines.append(
+            f"SON: {self.number_to_words(total_entero).upper()} LEMPIRAS CON {total_centavos:02d}/100"
+        )
         lines.append("")
 
         # Información adicional
@@ -1127,41 +1175,85 @@ class SalesFrame(ttk.Frame):
 
         return "\n".join(lines)
 
-
     def number_to_words(self, n):
         """Convierte número a palabras (simplificado para español)."""
         if n == 0:
             return "cero"
-        
-        unidades = ["", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"]
-        decenas = ["", "diez", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"]
-        centenas = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"]
-        
+
+        unidades = [
+            "",
+            "un",
+            "dos",
+            "tres",
+            "cuatro",
+            "cinco",
+            "seis",
+            "siete",
+            "ocho",
+            "nueve",
+        ]
+        decenas = [
+            "",
+            "diez",
+            "veinte",
+            "treinta",
+            "cuarenta",
+            "cincuenta",
+            "sesenta",
+            "setenta",
+            "ochenta",
+            "noventa",
+        ]
+        centenas = [
+            "",
+            "ciento",
+            "doscientos",
+            "trescientos",
+            "cuatrocientos",
+            "quinientos",
+            "seiscientos",
+            "setecientos",
+            "ochocientos",
+            "novecientos",
+        ]
+
         if n < 10:
             return unidades[n]
         elif n < 100:
-            return f"{decenas[n//10]} y {unidades[n%10]}" if n % 10 != 0 else decenas[n//10]
+            return (
+                f"{decenas[n//10]} y {unidades[n%10]}"
+                if n % 10 != 0
+                else decenas[n // 10]
+            )
         elif n < 1000:
-            return f"{centenas[n//100]} {self.number_to_words(n%100)}" if n % 100 != 0 else centenas[n//100]
+            return (
+                f"{centenas[n//100]} {self.number_to_words(n%100)}"
+                if n % 100 != 0
+                else centenas[n // 100]
+            )
         elif n < 1000000:
             miles = n // 1000
             resto = n % 1000
-            palabra_miles = "mil" if miles == 1 else f"{self.number_to_words(miles)} mil"
-            return f"{palabra_miles} {self.number_to_words(resto)}" if resto != 0 else palabra_miles
-        
+            palabra_miles = (
+                "mil" if miles == 1 else f"{self.number_to_words(miles)} mil"
+            )
+            return (
+                f"{palabra_miles} {self.number_to_words(resto)}"
+                if resto != 0
+                else palabra_miles
+            )
+
         return str(n)
 
     def update_printer_status(self, detected, name):
         """Actualiza el estado de la impresora en la UI."""
         if detected:
             self.printer_status_label.config(
-                text=f"✓ Impresora: {name}",
-                foreground="#28a745"
+                text=f"✓ Impresora: {name}", foreground="#28a745"
             )
         else:
             self.printer_status_label.config(
-                text="⚠ No se detectó impresora",
-                foreground="#dc3545"
+                text="⚠ No se detectó impresora", foreground="#dc3545"
             )
 
     def search_printers_dialog(self, parent_window):
@@ -1169,105 +1261,118 @@ class SalesFrame(ttk.Frame):
         search_win = Toplevel(parent_window)
         search_win.title("Buscar Impresoras")
         search_win.geometry("500x400")
-        
+
         main_frame = ttk.Frame(search_win, padding="20")
         main_frame.pack(fill="both", expand=True)
-        
+
         ttk.Label(
-            main_frame,
-            text="Búsqueda de Impresoras",
-            font=("Arial", 14, "bold")
+            main_frame, text="Búsqueda de Impresoras", font=("Arial", 14, "bold")
         ).pack(pady=(0, 20))
-        
+
         # Lista de impresoras
-        list_frame = ttk.LabelFrame(main_frame, text="Impresoras Detectadas", padding=10)
+        list_frame = ttk.LabelFrame(
+            main_frame, text="Impresoras Detectadas", padding=10
+        )
         list_frame.pack(fill="both", expand=True, pady=(0, 15))
-        
+
         printers_list = tk.Listbox(list_frame, height=10, font=("Arial", 10))
         printers_list.pack(fill="both", expand=True)
-        
+
         # Buscar impresoras
         def search_all_printers():
             printers_list.delete(0, tk.END)
             printers_list.insert(tk.END, "Buscando impresoras...")
             search_win.update()
-            
+
             found_printers = self.get_all_printers()
             printers_list.delete(0, tk.END)
-            
+
             if found_printers:
                 for printer in found_printers:
                     printers_list.insert(tk.END, printer)
             else:
                 printers_list.insert(tk.END, "No se encontraron impresoras")
-        
+
         # Botones
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(fill="x")
-        
-        ttk.Button(
-            btn_frame,
-            text="🔍 Buscar Ahora",
-            command=search_all_printers
-        ).pack(side="left", padx=5)
-        
-        ttk.Button(
-            btn_frame,
-            text="Cerrar",
-            command=search_win.destroy
-        ).pack(side="right", padx=5)
-        
+
+        ttk.Button(btn_frame, text="🔍 Buscar Ahora", command=search_all_printers).pack(
+            side="left", padx=5
+        )
+
+        ttk.Button(btn_frame, text="Cerrar", command=search_win.destroy).pack(
+            side="right", padx=5
+        )
+
         # Ejecutar búsqueda inicial
         search_all_printers()
 
     def get_all_printers(self):
         """Obtiene lista de todas las impresoras disponibles."""
         printers = []
-        
+
         try:
             import platform
+
             system = platform.system()
-            
+
             if system == "Windows":
                 try:
                     import win32print
-                    printer_info = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)
+
+                    printer_info = win32print.EnumPrinters(
+                        win32print.PRINTER_ENUM_LOCAL
+                        | win32print.PRINTER_ENUM_CONNECTIONS
+                    )
                     for printer in printer_info:
                         printers.append(printer[2])
                 except:
                     pass
-            
+
             elif system in ["Darwin", "Linux"]:
                 try:
                     import subprocess
-                    result = subprocess.run(['lpstat', '-p'], capture_output=True, text=True)
+
+                    result = subprocess.run(
+                        ["lpstat", "-p"], capture_output=True, text=True
+                    )
                     if result.returncode == 0:
-                        for line in result.stdout.split('\n'):
-                            if line.startswith('printer'):
+                        for line in result.stdout.split("\n"):
+                            if line.startswith("printer"):
                                 printer_name = line.split()[1]
                                 printers.append(printer_name)
                 except:
                     pass
         except:
             pass
-        
+
         return printers if printers else []
 
     def confirm_sale_and_process(self, window, venta_id, total, pagado, vuelto, fecha):
         """Confirma y procesa la venta definitivamente, guarda el recibo y ofrece imprimir.."""
         if not messagebox.askyesno(
             "Confirmar Venta",
-            "¿Está seguro de confirmar esta venta?\n\nEsta acción no se puede deshacer."
+            "¿Está seguro de confirmar esta venta?\n\nEsta acción no se puede deshacer.",
         ):
             return
 
         try:
-            cart_data = self.pending_sale.get('cart_snapshot', {})
+            cart_data = self.pending_sale.get("cart_snapshot", {})
 
             # 🔹 Guardar venta en base de datos
             self.db.execute(
                 "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, cliente_id, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (venta_id, fecha, total, pagado, vuelto, self.app.current_user[0], self.pending_sale.get('cliente_id'), "HTML"),
+                (
+                    venta_id,
+                    fecha,
+                    total,
+                    pagado,
+                    vuelto,
+                    self.app.current_user[0],
+                    self.pending_sale.get("cliente_id"),
+                    "HTML",
+                ),
             )
 
             # 🔹 Guardar detalle y actualizar stock
@@ -1280,7 +1385,15 @@ class SalesFrame(ttk.Frame):
 
                 self.db.execute(
                     "INSERT INTO DetalleVenta (venta_id, producto_id, nombre_producto, cantidad, precio_unitario, descuento, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (venta_id, prod_id, data["nombre"], cant, precio, desc_monto, subtotal),
+                    (
+                        venta_id,
+                        prod_id,
+                        data["nombre"],
+                        cant,
+                        precio,
+                        desc_monto,
+                        subtotal,
+                    ),
                 )
 
                 self.db.execute(
@@ -1298,8 +1411,7 @@ class SalesFrame(ttk.Frame):
             window.destroy()
 
             messagebox.showinfo(
-                "Éxito",
-                f"Venta {venta_id} confirmada y procesada correctamente."
+                "Éxito", f"Venta {venta_id} confirmada y procesada correctamente."
             )
 
             # 🔹 Generar contenido HTML del recibo
@@ -1314,15 +1426,14 @@ class SalesFrame(ttk.Frame):
             action = messagebox.askquestion(
                 "Venta Confirmada",
                 "Venta procesada exitosamente.\n\n¿Desea imprimir el recibo?",
-                icon='info'
+                icon="info",
             )
 
-            if action == 'yes':
+            if action == "yes":
                 self.print_receipt(html_content, window)
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al procesar venta: {e}")
-
 
     def format_receipt_for_preview(self, venta_id, total, pagado, vuelto, fecha):
         """Formatea el recibo en texto plano para vista previa."""
@@ -1337,19 +1448,19 @@ class SalesFrame(ttk.Frame):
         lines.append("-" * 40)
         lines.append(f"{'PRODUCTO':<20} {'CANT':<5} {'SUBTOTAL':>10}")
         lines.append("-" * 40)
-        
+
         for data in self.cart.values():
             cant = data["cantidad"]
             precio = data["precio_unitario"]
             desc_pct = data["descuento_porcentaje"]
             desc_monto = (precio * cant) * desc_pct
             subtotal = (precio * cant) - desc_monto
-            
+
             nombre = data["nombre"][:18]
             desc_text = f" (-{int(desc_pct*100)}%)" if desc_pct > 0 else ""
-            
+
             lines.append(f"{nombre+desc_text:<20} {cant:<5} ${subtotal:>9.2f}")
-        
+
         lines.append("-" * 40)
         lines.append("")
         lines.append(f"{'TOTAL A PAGAR:':<25} ${total:>10.2f}")
@@ -1360,44 +1471,52 @@ class SalesFrame(ttk.Frame):
         lines.append("Gracias por su compra".center(40))
         lines.append("Vuelva pronto".center(40))
         lines.append("=" * 40)
-        
+
         return "\n".join(lines)
 
     def detect_printer(self):
         """Detecta si hay una impresora disponible."""
         try:
             import platform
+
             system = platform.system()
-            
+
             if system == "Windows":
                 try:
                     import win32print
+
                     default_printer = win32print.GetDefaultPrinter()
                     if default_printer:
                         return True, default_printer
                 except:
                     pass
-            
+
             elif system == "Darwin":
                 try:
                     import subprocess
-                    result = subprocess.run(['lpstat', '-d'], capture_output=True, text=True)
+
+                    result = subprocess.run(
+                        ["lpstat", "-d"], capture_output=True, text=True
+                    )
                     if result.returncode == 0 and result.stdout:
-                        printer = result.stdout.split(':')[-1].strip()
+                        printer = result.stdout.split(":")[-1].strip()
                         return True, printer
                 except:
                     pass
-            
+
             elif system == "Linux":
                 try:
                     import subprocess
-                    result = subprocess.run(['lpstat', '-d'], capture_output=True, text=True)
+
+                    result = subprocess.run(
+                        ["lpstat", "-d"], capture_output=True, text=True
+                    )
                     if result.returncode == 0 and result.stdout:
-                        printer = result.stdout.split(':')[-1].strip()
+                        printer = result.stdout.split(":")[-1].strip()
                         return True, printer
                 except:
                     pass
-            
+
             return False, "No detectada"
         except:
             return False, "No detectada"
@@ -1407,31 +1526,29 @@ class SalesFrame(ttk.Frame):
         settings_win = Toplevel(self.app)
         settings_win.title("Configuración de Impresora")
         settings_win.geometry("500x400")
-        
+
         main_frame = ttk.Frame(settings_win, padding="20")
         main_frame.pack(fill="both", expand=True)
-        
+
         ttk.Label(
-            main_frame,
-            text="Configuración de Impresora",
-            font=("Arial", 14, "bold")
+            main_frame, text="Configuración de Impresora", font=("Arial", 14, "bold")
         ).pack(pady=(0, 20))
-        
+
         ttk.Label(
             main_frame,
             text="No se detectó ninguna impresora conectada",
             font=("Arial", 11),
-            foreground="#dc3545"
+            foreground="#dc3545",
         ).pack(pady=10)
-        
+
         ttk.Separator(main_frame, orient="horizontal").pack(fill="x", pady=15)
-        
+
         ttk.Label(
             main_frame,
             text="Pasos para configurar su impresora:",
-            font=("Arial", 10, "bold")
+            font=("Arial", 10, "bold"),
         ).pack(anchor="w", pady=(0, 10))
-        
+
         steps = [
             "1. Conecte físicamente la impresora a su computadora",
             "2. Encienda la impresora",
@@ -1440,33 +1557,28 @@ class SalesFrame(ttk.Frame):
             "   - Windows: Panel de Control > Dispositivos e impresoras",
             "   - macOS: Preferencias del Sistema > Impresoras",
             "   - Linux: Configuración > Impresoras",
-            "5. Reinicie esta aplicación para detectar la impresora"
+            "5. Reinicie esta aplicación para detectar la impresora",
         ]
-        
+
         for step in steps:
-            ttk.Label(
-                main_frame,
-                text=step,
-                font=("Arial", 9),
-                foreground="#333"
-            ).pack(anchor="w", pady=2, padx=20)
-        
+            ttk.Label(main_frame, text=step, font=("Arial", 9), foreground="#333").pack(
+                anchor="w", pady=2, padx=20
+            )
+
         ttk.Separator(main_frame, orient="horizontal").pack(fill="x", pady=15)
-        
+
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(fill="x", pady=10)
-        
+
         ttk.Button(
             btn_frame,
             text="Reintentar Detección",
-            command=lambda: self.retry_printer_detection(settings_win)
+            command=lambda: self.retry_printer_detection(settings_win),
         ).pack(side="left", padx=5)
-        
-        ttk.Button(
-            btn_frame,
-            text="Cerrar",
-            command=settings_win.destroy
-        ).pack(side="right", padx=5)
+
+        ttk.Button(btn_frame, text="Cerrar", command=settings_win.destroy).pack(
+            side="right", padx=5
+        )
 
     def retry_printer_detection(self, window):
         """Reintenta detectar la impresora."""
@@ -1474,28 +1586,26 @@ class SalesFrame(ttk.Frame):
         if detected:
             messagebox.showinfo(
                 "Impresora Detectada",
-                f"Impresora encontrada:\n{name}\n\nYa puede imprimir sus recibos."
+                f"Impresora encontrada:\n{name}\n\nYa puede imprimir sus recibos.",
             )
             window.destroy()
         else:
             messagebox.showwarning(
                 "No Detectada",
-                "No se detectó ninguna impresora.\nVerifique la conexión e instalación de drivers."
+                "No se detectó ninguna impresora.\nVerifique la conexión e instalación de drivers.",
             )
 
     def change_save_folder(self, parent_window):
         """Permite cambiar la carpeta donde se guardan los recibos."""
         folder = filedialog.askdirectory(
-            title="Seleccionar carpeta para guardar recibos",
-            parent=parent_window
+            title="Seleccionar carpeta para guardar recibos", parent=parent_window
         )
-        
+
         if folder:
             self.db.set_config("recibo_save_path", folder)
             self.path_label.config(text=folder)
             messagebox.showinfo(
-                "Carpeta Configurada",
-                f"Los recibos se guardarán en:\n{folder}"
+                "Carpeta Configurada", f"Los recibos se guardarán en:\n{folder}"
             )
 
     def print_receipt(self, html_content, window):
@@ -1503,25 +1613,27 @@ class SalesFrame(ttk.Frame):
         try:
             import tempfile
             import webbrowser
-            
-            paper_size = getattr(self, 'paper_size_var', None)
+
+            paper_size = getattr(self, "paper_size_var", None)
             size_text = paper_size.get() if paper_size else "ticket"
-            
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
+
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as f:
                 f.write(html_content)
                 temp_path = f.name
-            
-            webbrowser.open(f'file://{temp_path}')
-            
+
+            webbrowser.open(f"file://{temp_path}")
+
             messagebox.showinfo(
                 "Impresión Iniciada",
                 f"Se abrió el recibo en su navegador.\n"
                 f"Tamaño: {size_text}\n\n"
-                f"Use Ctrl+P o Cmd+P para imprimir."
+                f"Use Ctrl+P o Cmd+P para imprimir.",
             )
-            
+
             window.destroy()
-            
+
         except Exception as e:
             messagebox.showerror("Error de Impresión", f"No se pudo imprimir: {e}")
 
@@ -1532,9 +1644,9 @@ class SalesFrame(ttk.Frame):
 
         if saved_path and not os.path.isdir(saved_path):
             messagebox.showwarning(
-             "Carpeta no encontrada",
-                f"La carpeta configurada no existe:\n{saved_path}\n\nSe creará una nueva automáticamente."
-         )
+                "Carpeta no encontrada",
+                f"La carpeta configurada no existe:\n{saved_path}\n\nSe creará una nueva automáticamente.",
+            )
 
         if not saved_path or not os.path.isdir(saved_path):
             # Carpeta por defecto si no está configurada
@@ -1545,7 +1657,6 @@ class SalesFrame(ttk.Frame):
                 self.db.set_config("recibo_save_path", saved_path)
             except:
                 pass
-
 
         file_path = ""
         if saved_path and os.path.isdir(saved_path):
@@ -1558,7 +1669,7 @@ class SalesFrame(ttk.Frame):
                 defaultextension=".html",
                 filetypes=[("HTML", "*.html"), ("Todos los archivos", "*.*")],
                 initialfile=f"Recibo_{venta_id}.html",
-                title="Guardar Recibo"
+                title="Guardar Recibo",
             )
 
         if file_path:
@@ -1568,33 +1679,39 @@ class SalesFrame(ttk.Frame):
                 if not os.path.exists(folder):
                     os.makedirs(folder, exist_ok=True)
 
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(html_content)
 
                 messagebox.showinfo(
-                    "Recibo Guardado",
-                    f"Recibo guardado exitosamente en:\n{file_path}"
+                    "Recibo Guardado", f"Recibo guardado exitosamente en:\n{file_path}"
                 )
 
-                if messagebox.askyesno("Abrir Recibo", "¿Desea abrir el recibo guardado?"):
+                if messagebox.askyesno(
+                    "Abrir Recibo", "¿Desea abrir el recibo guardado?"
+                ):
                     import webbrowser
-                    webbrowser.open(f'file://{file_path}')
+
+                    webbrowser.open(f"file://{file_path}")
 
                 window.destroy()
 
             except Exception as e:
-                messagebox.showerror("Error al Guardar", f"No se pudo guardar el recibo: {e}")
+                messagebox.showerror(
+                    "Error al Guardar", f"No se pudo guardar el recibo: {e}"
+                )
         else:
             # Si el usuario cancela el diálogo de guardado, no hace nada
             pass
 
-    def generate_receipt_html(self, venta_id, total, pagado, vuelto, fecha, cart_data=None):
+    def generate_receipt_html(
+        self, venta_id, total, pagado, vuelto, fecha, cart_data=None
+    ):
         """Genera el contenido HTML del recibo con diseño similar a ticket y carta."""
         if cart_data is None:
-            cart_data = self.pending_sale.get('cart_snapshot', self.cart)
+            cart_data = self.pending_sale.get("cart_snapshot", self.cart)
 
         # Determinar formato (ticket/carta) según configuración o variable
-        paper_size = getattr(self, 'paper_size_var', None)
+        paper_size = getattr(self, "paper_size_var", None)
         mode = paper_size.get() if paper_size else "ticket"
 
         # Encabezado de empresa
@@ -1603,7 +1720,7 @@ class SalesFrame(ttk.Frame):
             "nombre": "PODEGA Y COMERCIAL RIVERA",
             "tel": "2774-1192 / 9967-7300",
             "direccion": "Bo. La Mercedes, Colonia la Ermita, 1ra Calle, 14-62, frente a Farmacia Santa, La Paz, Honduras",
-            "email": "freddyrivera2015@gmail.com"
+            "email": "freddyrivera2015@gmail.com",
         }
 
         # Estilos básicos
