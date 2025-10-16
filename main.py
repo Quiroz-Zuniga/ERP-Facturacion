@@ -184,7 +184,7 @@ class ERPApp(tk.Tk):
         frame.pack(fill="both", expand=True)
 
     def logout(self):
-        """Cierra sesión y vuelve al login."""
+        """Cierra sesión y vuelve al login.."""
         if messagebox.askyesno("Cerrar Sesión", "¿Desea cerrar sesión?"):
             self.container.destroy()
             self.current_user = None

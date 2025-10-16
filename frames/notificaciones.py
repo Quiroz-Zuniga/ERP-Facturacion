@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 notificaciones.py
-Sistema de notificaciones push avanzado para ERP
+Sistema de notificaciones push avanzado para ERP...
 """
 
 import tkinter as tk
