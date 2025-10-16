@@ -981,10 +981,42 @@ class SalesFrame(ttk.Frame):
         text_widget.insert("1.0", content)
         text_widget.config(state="disabled")
 
+    def get_client_info_for_receipt(self, venta_id):
+        """Método auxiliar para obtener información del cliente para previsualización."""
+        cliente_info = None
+        cliente_id = None
+        
+        # Intentar obtener cliente_id desde pending_sale
+        if hasattr(self, 'pending_sale') and self.pending_sale:
+            cliente_id = self.pending_sale.get("cliente_id")
+        
+        # Si no hay cliente_id en pending_sale, intentar obtenerlo de la venta en la BD
+        if not cliente_id and venta_id:
+            venta_data = self.db.fetch("SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,))
+            if venta_data and venta_data[0][0]:
+                cliente_id = venta_data[0][0]
+        
+        # Obtener datos del cliente si existe
+        if cliente_id:
+            cliente_data = self.db.fetch("SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?", (cliente_id,))
+            if cliente_data:
+                cliente_info = {
+                    "nombre": cliente_data[0][0],
+                    "apellido": cliente_data[0][1], 
+                    "dni": cliente_data[0][2],
+                    "telefono": cliente_data[0][3],
+                    "direccion": cliente_data[0][4]
+                }
+        
+        return cliente_info
+
     def format_receipt_ticket(self, venta_id, total, pagado, vuelto, fecha):
         """Formato de recibo para ticket (80mm) con diseño idéntico al de carta."""
         lines = []
         width = 40  # Ticket width
+
+        # Obtener información del cliente
+        cliente_info = self.get_client_info_for_receipt(venta_id)
 
         # Encabezado de la empresa
         lines.append("=" * width)
@@ -1004,6 +1036,26 @@ class SalesFrame(ttk.Frame):
         lines.append("Página 1 de 1".center(width))
         lines.append("=" * width)
         lines.append("")
+
+        # Información del cliente (si existe)
+        if cliente_info:
+            lines.append("DATOS DEL CLIENTE:".center(width))
+            lines.append("-" * width)
+            lines.append(f"Nombre: {cliente_info['nombre']} {cliente_info['apellido']}")
+            if cliente_info['dni']:
+                lines.append(f"DNI: {cliente_info['dni']}")
+            if cliente_info['telefono']:
+                lines.append(f"Tel: {cliente_info['telefono']}")
+            if cliente_info['direccion']:
+                # Dividir dirección larga en múltiples líneas
+                direccion = cliente_info['direccion']
+                if len(direccion) > width:
+                    for i in range(0, len(direccion), width):
+                        lines.append(f"Dir: {direccion[i:i+width]}")
+                else:
+                    lines.append(f"Dir: {direccion}")
+            lines.append("=" * width)
+            lines.append("")
 
         # Encabezados de tabla
         lines.append(
@@ -1083,6 +1135,9 @@ class SalesFrame(ttk.Frame):
         lines = []
         width = 80
 
+        # Obtener información del cliente
+        cliente_info = self.get_client_info_for_receipt(venta_id)
+
         # Encabezado de la empresa
         lines.append("=" * width)
         lines.append("R.T.N.: 12011972000081".center(width))
@@ -1101,6 +1156,20 @@ class SalesFrame(ttk.Frame):
         lines.append("Página 1 de 1".center(width))
         lines.append("=" * width)
         lines.append("")
+
+        # Información del cliente (si existe)
+        if cliente_info:
+            lines.append("DATOS DEL CLIENTE:".center(width))
+            lines.append("-" * width)
+            lines.append(f"Nombre: {cliente_info['nombre']} {cliente_info['apellido']}")
+            if cliente_info['dni']:
+                lines.append(f"DNI: {cliente_info['dni']}")
+            if cliente_info['telefono']:
+                lines.append(f"Teléfono: {cliente_info['telefono']}")
+            if cliente_info['direccion']:
+                lines.append(f"Dirección: {cliente_info['direccion']}")
+            lines.append("=" * width)
+            lines.append("")
 
         # Encabezados de tabla
         lines.append(
