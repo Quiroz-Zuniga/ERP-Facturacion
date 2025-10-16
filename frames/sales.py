@@ -1710,6 +1710,27 @@ class SalesFrame(ttk.Frame):
         if cart_data is None:
             cart_data = self.pending_sale.get("cart_snapshot", self.cart)
 
+        # Obtener información del cliente
+        cliente_info = None
+        cliente_id = self.pending_sale.get("cliente_id") if hasattr(self, 'pending_sale') and self.pending_sale else None
+        
+        # Si no hay cliente_id en pending_sale, intentar obtenerlo de la venta en la BD
+        if not cliente_id and venta_id:
+            venta_data = self.db.fetch("SELECT id_cliente FROM Ventas WHERE id = ?", (venta_id,))
+            if venta_data and venta_data[0][0]:
+                cliente_id = venta_data[0][0]
+        
+        if cliente_id:
+            cliente_data = self.db.fetch("SELECT nombre, apellido, dni, telefono, direccion FROM Clientes WHERE id = ?", (cliente_id,))
+            if cliente_data:
+                cliente_info = {
+                    "nombre": cliente_data[0][0],
+                    "apellido": cliente_data[0][1], 
+                    "dni": cliente_data[0][2],
+                    "telefono": cliente_data[0][3],
+                    "direccion": cliente_data[0][4]
+                }
+
         # Determinar formato (ticket/carta) según configuración o variable
         paper_size = getattr(self, "paper_size_var", None)
         mode = paper_size.get() if paper_size else "ticket"
@@ -1822,7 +1843,30 @@ class SalesFrame(ttk.Frame):
                 <div class="title">FACTURA</div>
                 <div>No. 0000-0001-{venta_id.split('-')[-1]}</div>
                 <div>Fecha: {fecha}</div>
-            </div>
+            </div>"""
+
+        # Agregar información del cliente si existe
+        if cliente_info:
+            cliente_section = f"""
+            <div style="margin: 15px 0; padding: 8px; border: 1px solid #ddd; background: #f9f9f9;">
+                <div style="font-weight: bold; margin-bottom: 5px;">DATOS DEL CLIENTE:</div>
+                <div><strong>Nombre:</strong> {cliente_info['nombre']} {cliente_info['apellido']}</div>"""
+            
+            if cliente_info['dni']:
+                cliente_section += f"""<div><strong>DNI:</strong> {cliente_info['dni']}</div>"""
+            
+            if cliente_info['telefono']:
+                cliente_section += f"""<div><strong>Teléfono:</strong> {cliente_info['telefono']}</div>"""
+            
+            if cliente_info['direccion']:
+                cliente_section += f"""<div><strong>Dirección:</strong> {cliente_info['direccion']}</div>"""
+            
+            cliente_section += """
+            </div>"""
+            
+            html_content += cliente_section
+
+        html_content += f"""
             <table>
                 <tr>
                     <th>Cant.</th>
