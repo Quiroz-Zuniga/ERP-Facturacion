@@ -156,6 +156,35 @@ class SalesFrame(ttk.Frame):
             self.checkout_frame, text="Resumen de Venta", font=("Arial", 14, "bold")
         ).pack(pady=(0, 20))
 
+        # Selector de cliente
+        client_frame = ttk.LabelFrame(self.checkout_frame, text="Cliente", padding=10)
+        client_frame.pack(fill="x", pady=(0, 20))
+        
+        self.selected_client_id = None
+        self.client_var = tk.StringVar(value="Cliente General")
+        
+        client_select_frame = ttk.Frame(client_frame)
+        client_select_frame.pack(fill="x")
+        
+        self.client_combo = ttk.Combobox(
+            client_select_frame, 
+            textvariable=self.client_var, 
+            state="readonly",
+            width=25
+        )
+        self.client_combo.pack(side="left", expand=True, fill="x", padx=(0, 5))
+        self.client_combo.bind("<<ComboboxSelected>>", self.on_client_select)
+        
+        ttk.Button(
+            client_select_frame, 
+            text="🔄", 
+            command=self.load_clients,
+            width=3
+        ).pack(side="right")
+        
+        # Cargar clientes al inicio
+        self.load_clients()
+
         self.total_var = tk.DoubleVar(value=0.0)
         self.monto_pagado_var = tk.DoubleVar(value=0.0)
         self.vuelto_var = tk.DoubleVar(value=0.0)
@@ -481,6 +510,37 @@ class SalesFrame(ttk.Frame):
         except:
             self.vuelto_var.set(0.0)
 
+    def load_clients(self):
+        """Carga la lista de clientes activos."""
+        try:
+            # Opción para venta sin cliente específico
+            clients = [("Cliente General", None)]
+            
+            # Cargar clientes activos de la base de datos
+            client_data = self.db.fetch(
+                "SELECT id, nombre, apellido FROM Clientes WHERE activo = 1 ORDER BY apellido, nombre"
+            )
+            
+            for client in client_data:
+                client_id, nombre, apellido = client
+                display_name = f"{apellido}, {nombre}"
+                clients.append((display_name, client_id))
+            
+            # Actualizar combobox
+            client_names = [client[0] for client in clients]
+            self.client_combo["values"] = client_names
+            
+            # Guardar referencia para obtener IDs
+            self.client_data = {client[0]: client[1] for client in clients}
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar clientes: {e}")
+
+    def on_client_select(self, event=None):
+        """Maneja la selección de un cliente."""
+        selected_name = self.client_var.get()
+        self.selected_client_id = self.client_data.get(selected_name)
+
     def remove_from_cart(self):
         """Elimina producto del carrito."""
         selected = self.cart_tree.focus()
@@ -508,6 +568,9 @@ class SalesFrame(ttk.Frame):
             self.update_cart_display()
             self.monto_pagado_var.set(0.0)
             self.discount_combo.set("Sin descuento")
+            # Resetear cliente a "Cliente General"
+            self.client_var.set("Cliente General")
+            self.selected_client_id = None
 
     def apply_selected_discount(self, event=None):
         """Aplica el descuento seleccionado del combobox al producto seleccionado."""
@@ -664,6 +727,7 @@ class SalesFrame(ttk.Frame):
             'total': total,
             'pagado': pagado,
             'vuelto': vuelto,
+            'cliente_id': self.selected_client_id,
             'cart_snapshot': dict(self.cart)  # Copia del carrito
         }
 
@@ -1202,8 +1266,8 @@ class SalesFrame(ttk.Frame):
 
             # 🔹 Guardar venta en base de datos
             self.db.execute(
-                "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (venta_id, fecha, total, pagado, vuelto, self.app.current_user[0], "HTML"),
+                "INSERT INTO Ventas (id, fecha, total, monto_pagado, vuelto, usuario_id, cliente_id, tipo_recibo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (venta_id, fecha, total, pagado, vuelto, self.app.current_user[0], self.pending_sale.get('cliente_id'), "HTML"),
             )
 
             # 🔹 Guardar detalle y actualizar stock

@@ -18,6 +18,23 @@ class DBManager:
     def create_tables(self):
         """Crea todas las tablas necesarias del sistema."""
 
+        # Tabla de Clientes
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS Clientes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                apellido TEXT NOT NULL,
+                dni TEXT UNIQUE,
+                telefono TEXT,
+                email TEXT,
+                direccion TEXT,
+                fecha_registro TEXT NOT NULL,
+                activo INTEGER DEFAULT 1
+            )
+        """
+        )
+
         # Tabla de Productos
         self.cursor.execute(
             """
@@ -90,7 +107,9 @@ class DBManager:
                 monto_pagado REAL,
                 vuelto REAL,
                 usuario_id INTEGER,
-                tipo_recibo TEXT
+                cliente_id INTEGER,
+                tipo_recibo TEXT,
+                FOREIGN KEY (cliente_id) REFERENCES Clientes(id)
             )
         """
         )
@@ -160,6 +179,23 @@ class DBManager:
             self.cursor.executemany(
                 "INSERT INTO Productos (nombre, descripcion, precio, stock, proveedor_id) VALUES (?, ?, ?, ?, ?)",
                 productos_ejemplo,
+            )
+            self.conn.commit()
+
+        # Clientes de ejemplo
+        if not self.fetch("SELECT * FROM Clientes"):
+            from datetime import datetime
+            fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            clientes_ejemplo = [
+                ("Juan Carlos", "Pérez González", "0801199901234", "9876-1234", "juan.perez@email.com", "Colonia Palmira, Tegucigalpa", fecha_actual, 1),
+                ("María Elena", "Rodríguez López", "0801200005678", "9965-4789", "maria.rodriguez@email.com", "Barrio La Granja, San Pedro Sula", fecha_actual, 1),
+                ("José Antonio", "Martínez Castro", "0501199812345", "9754-3261", "jose.martinez@email.com", "Centro, Comayagua", fecha_actual, 1),
+                ("Ana Sofía", "García Hernández", "1801199909876", "9843-7521", "ana.garcia@email.com", "Colonia Kennedy, La Ceiba", fecha_actual, 1),
+            ]
+            self.cursor.executemany(
+                "INSERT INTO Clientes (nombre, apellido, dni, telefono, email, direccion, fecha_registro, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                clientes_ejemplo,
             )
             self.conn.commit()
 
